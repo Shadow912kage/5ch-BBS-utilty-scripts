@@ -8,10 +8,10 @@ JaneXeno の ツール(O) > 設定(O)... > 機能 > コマンド で以下のよ
 　コマンド名： +必死チェッカー(ID)
 　　(先頭に「+」を付けた任意の文字列、レス番メニューのみに表示)
 　実行するコマンド： wscript "$BASEPATHScript/hissiChecker.js" "$URL" "$LOCALDAT" $NUMBER ID
-　コマンド名： +必死チェッカー(Trip)
-　実行するコマンド： wscript "$BASEPATHScript/hissiChecker.js" "$URL" "$LOCALDAT" $NUMBER Trip
 　　(2つ目のパラーメータは、JaneXeno をインストールしたフォルダ下の
 　　 Script というフォルダに hissiChecker.js というファイル名で置いた場合)
+　コマンド名： +必死チェッカー(Trip)
+　実行するコマンド： wscript "$BASEPATHScript/hissiChecker.js" "$URL" "$LOCALDAT" $NUMBER Trip
 ```
 
 ## ロードアベレージチェック ChkLoadAVG.js
