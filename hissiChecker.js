@@ -1,4 +1,4 @@
-//  hissi Checker via hissi.org ver.0.1
+//  hissi Checker via hissi.org ver.0.1.1
 //    Usage: hissiChecker.js <bbs name> <local dat path> <res number> <ID or else>
 //
 //  On the JaneXeno
@@ -6,6 +6,7 @@
 //     Command: wscript "$BASEPATHScript/hissiChecker.js" "$URL" "$LOCALDAT" $NUMBER ID/else
 
 //  Version history
+//    0.1.1: Added 'g' flag for regex replacing the URI in the 'Trip' searching
 //    0.1: Initial release
 
 /* References
@@ -16,7 +17,7 @@
 */
 
 var hissiChecker = {
-  Version: "0.1",
+  Version: "0.1.1",
 
   // hissi checker's site parameters
   hissiUrlBase: "http://hissi.org/",
@@ -105,7 +106,6 @@ var hissiChecker = {
     }
   },
   chkTargetUrl: function () {
-//    var urls = this.ThreadUrl.match(/https:\/\/(([-0-9A-Za-z]+)\.(?:5ch\.net|bbspink\.com))\/([-0-9A-Za-z]+)\//);
     var urls = this.ThreadUrl.match(/https:\/\/(([-0-9A-Za-z]+)\.(?:5ch\.net|bbspink\.com))\/test\/read\.cgi\/([-0-9A-Za-z]+)/);
     if (urls) {
       this.folderName = urls[3];
@@ -188,7 +188,7 @@ and the receiving local side processes it as is with UTF-16LE BOM.
     if (this.IdOrTrip) // Replace hissi Checker's URI string
       resultData = tmp.replace(/\.\.(\/\d{8}\/\w+\.html)/, this.hissiUrlBase + this.hissiIdSearch1 + this.folderName + "$1");
     else
-      resultData = tmp.replace(/\.\/(read\.php\/\w+\/\d{8}\/\w+\.html)/, this.hissiUrlBase + "$1");
+      resultData = tmp.replace(/\.\/(read\.php\/\w+\/\d{8}\/\w+\.html)/g, this.hissiUrlBase + "$1");
     strm.Position = 0; // Reset writing position
     strm.WriteText(resultData);
     strm.SaveToFile(this.resultHTML, 2); // over write, result HTML
