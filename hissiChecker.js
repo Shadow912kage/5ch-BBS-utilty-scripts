@@ -1,4 +1,4 @@
-//  hissi Checker via hissi.org ver.0.1.1
+//  hissi Checker via hissi.org ver.0.1.2
 //    Usage: hissiChecker.js <bbs name> <local dat path> <res number> <ID or else>
 //
 //  On the JaneXeno
@@ -6,6 +6,7 @@
 //     Command: wscript "$BASEPATHScript/hissiChecker.js" "$URL" "$LOCALDAT" $NUMBER ID/else
 
 //  Version history
+//    0.1.2: Added 'ID' checking condition to the if statement
 //    0.1.1: Added 'g' flag for regex replacing the URI in the 'Trip' searching
 //    0.1: Initial release
 
@@ -17,7 +18,7 @@
 */
 
 var hissiChecker = {
-  Version: "0.1.1",
+  Version: "0.1.2",
 
   // hissi checker's site parameters
   hissiUrlBase: "http://hissi.org/",
@@ -121,8 +122,8 @@ var hissiChecker = {
       var res = dat.ReadLine();
     dat.Close();
     if (this.IdOrTrip) { // ID check
-      var dateid = res.match(/<>(?:(\d{4})\/(\d{2})\/(\d{2})\([“úŒ‰Î…–Ø‹à“y]\) \d{2}:\d{2}:\d{2}\.\d{2})(?: (?:(?:ID:([-+/0-9A-Za-z]+))œ?)?)?(?: .)?( BE:[^<>]+)?<>/);
-      if (dateid) {
+      var dateid = res.match(/<>(?:(\d{4})\/(\d{2})\/(\d{2})\([“úŒ‰Î…–Ø‹à“y]\) \d{2}:\d{2}:\d{2}\.\d{2})(?: (?:(?:ID:([-+\/0-9A-Za-z]+))œ?)?)?(?: .)?( BE:[^<>]+)?<>/);
+      if (dateid && dateid[4]) {
         this.targetDate = dateid[1] + dateid[2] + dateid[3];
         this.targetID = dateid[4];
       } else {
