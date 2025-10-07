@@ -1,4 +1,4 @@
-//  hissi Checker via hissi.org ver.0.1.2
+//  hissi Checker via hissi.org ver.0.1.3
 //    Usage: hissiChecker.js <bbs name> <local dat path> <res number> <ID or else>
 //
 //  On the JaneXeno
@@ -6,6 +6,8 @@
 //     Command: wscript "$BASEPATHScript/hissiChecker.js" "$URL" "$LOCALDAT" $NUMBER ID/else
 
 //  Version history
+//    0.1.3: Added If 'ID' and 'Trip' contain '+', then convert to '%2B'
+//           JScript's 'application/x-www-form-urlencoded' bug, maybe...
 //    0.1.2: Added 'ID' checking condition to the if statement
 //    0.1.1: Added 'g' flag for regex replacing the URI in the 'Trip' searching
 //    0.1: Initial release
@@ -18,7 +20,7 @@
 */
 
 var hissiChecker = {
-  Version: "0.1.2",
+  Version: "0.1.3",
 
   // hissi checker's site parameters
   hissiUrlBase: "http://hissi.org/",
@@ -125,7 +127,7 @@ var hissiChecker = {
       var dateid = res.match(/<>(?:(\d{4})\/(\d{2})\/(\d{2})\([日月火水木金土]\) \d{2}:\d{2}:\d{2}\.\d{2})(?: (?:(?:ID:([-+\/0-9A-Za-z]+))●?)?)?(?: .)?( BE:[^<>]+)?<>/);
       if (dateid && dateid[4]) {
         this.targetDate = dateid[1] + dateid[2] + dateid[3];
-        this.targetID = dateid[4];
+        this.targetID = dateid[4].replace(/\+/g, "%2B");
       } else {
         this.ErrMsg = "ID のない板・スレッド・書き込みです";
         this.DispErr();
@@ -133,7 +135,7 @@ var hissiChecker = {
     } else { // TRIP check
       var tripdate = res.match(/^[^<]*<\/b>◆([^\s]{10,12})\s<b>.*<>[^<]*<>(\d{4})\/(\d{2})\/(\d{2})/);
       if (tripdate) {
-        this.targetTrip = tripdate[1];
+        this.targetTrip = tripdate[1].replace(/\+/g, "%2B");
         this.targetDate = tripdate[2] + tripdate[3] + tripdate[4];
       } else {
         this.ErrMsg = "トリップが付いていない名前です";
