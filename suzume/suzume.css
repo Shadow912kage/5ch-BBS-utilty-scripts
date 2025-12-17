@@ -1,0 +1,111 @@
+/*
+  graphs.html's css style sheet
+*/
+BODY {
+    color: #33C; background-color: #CCC; 
+    font-family: 'Lucida Grande', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+}
+H1 {
+  margin: 0.50em 0.50em 0.25em 0.25em;
+  padding: 0;
+  font-size: 1.75em;
+  color:#66C;
+}
+H2 {
+  margin: 0.75em 0.50em 0.00em 0.50em;
+  padding: 0;
+  font-size: 1.50em;
+  color:#36C;
+}
+H3 {
+  margin: 1.50em 0.50em 0.50em 1.00em;
+  padding: 0;
+  font-size: 1.25em;
+  color:#339;
+}
+P {
+  margin: 0.00em 2.00em 1.00em 3.00em;
+  padding: 0;
+  color: #006;
+  font-size: 0.75em;
+}
+IMG {
+  margin: 0.00em 0.50em 0.00em 0.00em;
+  padding: 0;
+  border:solid 1px #666;
+  border-radius: 4px/4px;
+  background-color: #CCC;
+}
+IMG.graph {
+  width: 90%;
+}
+
+DIV.Warning {
+  position: fixed;
+  top: 0.25em;
+  right: 1.00em;
+  left: auto;
+  margin: 0;
+  padding: 0;
+  text-align: right;
+  font-size: 1.25em;
+  line-height: 1.50em;
+  color: #933;
+  background: transparent;
+  opacity: 0.75;
+}
+SPAN.Warning {
+  margin: 0.25em 0.00em;
+  padding: 0.10em 0.50em;
+  color: #933;
+  border:solid 1px #933;
+  border-radius: 0.25em/0.25em;
+  background-color: #FCC;
+}
+SPAN.Caution {
+  margin: 0.25em 0.00em;
+  padding: 0.10em 0.50em;
+  color: #C63;
+  border:solid 1px #933;
+  border-radius: 0.25em/0.25em;
+  background-color: #FC6;
+}
+
+SPAN.H3_OK {
+  margin: 0.00em 0.50em 0.00em 1.00em;
+  padding: 0 0.50em;
+  color: #393;
+}
+SPAN.H3_NG {
+  margin: 0.00em 0.50em 0.00em 1.00em;
+  padding: 0 0.50em;
+  color: #933;
+  border:solid 1px #933;
+  border-radius: 0.25em/0.25em;
+  background-color: #FCC;
+}
+SPAN.LA_OK {
+  margin: 0.00em 0.50em 0.00em 0.50em;
+  padding: 0 0.50em;
+  color: #363;
+  font-size: 1.00em;
+}
+SPAN.LA_NG {
+  margin: 0.00em 0.50em 0.00em 0.50em;
+  padding: 0 0.50em;
+  color: #933;
+  font-size: 1.50em;
+  border:solid 1px #933;
+  border-radius: 0.25em/0.25em;
+  background-color: #FCC;
+}
+
+SPAN.H3_P_NG {
+  margin: 0.00em 0.50em 0.00em 0.50em;
+  padding: 0 0.50em;
+  color: #C63;
+  font-size: 1.00em;
+  border:solid 1px #933;
+  border-radius: 0.25em/0.25em;
+  background-color: #FC6;
+}
