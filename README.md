@@ -19,7 +19,7 @@ JaneXeno の ツール(O) > 設定(O)... > 機能 > コマンド で以下のよ
 サンプルとして出力ダイアログ Sample-ChkAloadAVG.png と雀のお宿 Sample-graphs.html を置いておきます。<hr>
 動作にはスクリプト本体 (ChkLoadAVG.js) と雀のお宿 (graphs.html) 生成・表示に suzumeフォルダー下のテンプレートファイル (graphsTemplate.html)、スタイルシート (suzume.css)、ファビコン (suzume.ico) が必要です。<br>
 suzumeフォルダーはスクリプト本体と同じフォルダーに置いてください。graphs.html は suzumeフォルダーに生成されます。<br>
-※ChkLoadAVG.js ver. 0.1 は雀のお宿表示までに bbsmenu.json のパースと graphs.html の生成にチト時間がかかります(Core i5-7200U 2.5GHz 8 Gbytesで約5秒w)
+※ChkLoadAVG.js ver. 0.1 は雀のお宿表示までに bbsmenu.json のパースと graphs.html の生成にチト時間がかかります(Core i5-7200U 2.5GHz 8 Gbytesで約8秒w)
 ```
 JaneXeno の ツール(O) > 設定(O)... > 機能 > コマンド で以下のように設定
 　コマンド名： ロードアベレージ
