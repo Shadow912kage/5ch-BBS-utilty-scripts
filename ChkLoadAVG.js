@@ -1,4 +1,4 @@
-//  ChkLoadAVG.js - Check Load average of 5ch server ver.0.1
+//  ChkLoadAVG.js - Check Load average of 5ch server ver.0.2
 //    Usage: ChkLoadAVG.js <server name>
 //
 //  On the JaneXeno
@@ -9,6 +9,9 @@
 //        Command: wscript "$BASEPATHScript/ChkLoadAVG.js"
 
 //  Version history
+//    0.2: Brushed up the source code.
+//         Splitting the template file and the string replacement process.
+//         Added section link block (URL fragment).
 //    0.1: Initial release
 
 //  5ch bbsmenu(.json)
@@ -20,7 +23,7 @@
 //view-source:https://web.archive.org/web/20230713114335/https://stat.5ch.net/graphs.html
 
 var ChkLoadAVG = {
-  Version: "0.1",
+  Version: "0.2",
 
   // Configuration variables and their values.
   ResultGraphsFile: "suzume\\graphs.html",
@@ -30,19 +33,15 @@ var ChkLoadAVG = {
 
   // Variables in the program and their values.
   preMarker: "<!-- DO NOT DELETE AND EDIT THIS COMMENT LINE\r?\n     ",
-  markerTbl: ["HEADER", "DOMAIN", "CONTENTS", "HORIZONTAL RULE", "FOOTER"],
+  markerTbl: ["HEADER", "SECTION LINK", "DOMAIN", "CONTENTS", "HORIZONTAL RULE", "FOOTER"],
   postMarker: " -->\r?\n",
   blockStr: "((?:.+\r?\n)+?)",
   endOfFile: "(.+)?$",
   gVarStrTbl: ["%SCRNAME%", "%VERSION%", "%DATETIME%", "%LDATETIME%"],
+  sVarStrTbl: ["%HOST%"],
   dVarStrTbl: ["%DOMAIN%"],
   cVarStrTbl: ["%HOST%", "%FQDN%", "%LATEXT%"],
-  replaceTbl: [[this.gVarStrTbl],                  // HEADER
-               [this.gVarStrTbl, this.dVarStrTbl], // DOMAIN
-               [this.gVarStrTbl, this.cVarStrTbl], // CONTENTS
-               [this.gVarStrTbl],                  // HORIZONTAL RULE
-               [this.gVarStrTbl]],                 // FOOTER
-      
+
   // Global function.
   CheckLA: function() {
     this.init();
@@ -51,7 +50,9 @@ var ChkLoadAVG = {
       if (!(this.laText && this.dispLoadAVG()))
         return;
     }
+    this.splitTmpltFile();
     this.getBBSMenuJson();
+    this.getServerList();
     this.showGraphsHtml();
   },
 
@@ -236,6 +237,31 @@ graph_load.png:
  outgoing: 0.635 MBPS
  ============================================== */
   },
+  // Split template file
+  splitTmpltFile: function() {
+    // Load the template file and process it.
+    var tmpltHtmlStr = this.loadFile(this.TemplateGraphsFile, "UTF-8");
+    var tmpltStr = "";
+    for (var i = 0; i < this.markerTbl.length; i++)
+      tmpltStr += this.preMarker + this.markerTbl[i] + this.postMarker +
+                  this.blockStr;
+    tmpltStr += this.endOfFile;
+    var tmpltBlks = new RegExp(tmpltStr);
+    var matchBlk = tmpltHtmlStr.match(tmpltBlks);
+    if (!matchBlk) {
+      this.errMsg = "テンプレートファイルを処理できませんでした。\nファイル名: " + this.TemplateGraphsFile;
+      this.dispErr();
+    }
+
+    // The last line w/o a carriage return is joined to the previous line.
+    if (this.markerTbl.length + 2 == matchBlk.length) {
+      matchBlk[this.markerTbl.length] += matchBlk[matchBlk.length - 1];
+      matchBlk.length--;
+    }
+    this.tmpltStrTbl = [];
+    for (i = 0; i < matchBlk.length - 1; i++)
+      this.tmpltStrTbl[i] = {Name: this.markerTbl[i], Str: matchBlk[i + 1]};
+  },
   // Get bbsmenu.json
   getBBSMenuJson: function() {
     try {
@@ -258,8 +284,8 @@ graph_load.png:
     this.BbsMenuJson = strm.ReadText();
     strm.Close();
   },
-  // Create ’graphs.html' and show it in the web browser.
-  showGraphsHtml: function() {
+  // Create a server list of 5ch.net and bbspink.com.
+  getServerList: function() {
     // Create an array of domains and servers from the bbsmenu.json.
     var regex5ch =
       /"url"\s*:\s*"https:\/\/([-A-Za-z0-9]+)\.5ch\.net\/[-A-Za-z0-9]+\/"/g;
@@ -285,40 +311,13 @@ graph_load.png:
     for (var prop in srvPnk)
       this.serverListPnk[i++] = prop;
     this.serverListPnk.sort();
-
-    // Load the template file and process it.
-    var tmpltHtmlStr = this.loadFile(this.TemplateGraphsFile, "UTF-8");
-    var tmpltStr = "";
-    for (i = 0; i < this.markerTbl.length; i++)
-      tmpltStr += this.preMarker + this.markerTbl[i] + this.postMarker +
-                  this.blockStr;
-    tmpltStr += this.endOfFile;
-    var tmpltBlks = new RegExp(tmpltStr);
-    var matchBlk = tmpltHtmlStr.match(tmpltBlks);
-    if (!matchBlk)
-      return;
-
-    // The last line w/o a carriage return is joined to the previous line.
-    if (this.markerTbl.length + 2 == matchBlk.length) {
-      matchBlk[this.markerTbl.length] += matchBlk[matchBlk.length - 1];
-      matchBlk.length--;
-    }
-    var tmpltStrTbl = [];
-    for (i = 0; i < matchBlk.length - 1; i++) {
-      tmpltStrTbl[i] = {Name: this.markerTbl[i],
-        RepalceTbl: this.replaceTbl[i], Str: matchBlk[i + 1]};
-    }
-
+  },
+  // Create ’graphs.html' and show it in the default web browser.
+  showGraphsHtml: function() {
     // Replace global variables in template blocks, '%SCRNAME%', '%VERSION%',
     // '%DATETIME%', and '%LDATETIME%'.
-    var dVarRegex = [];
-    for (i = 0; i < this.dVarStrTbl.length; i++)
-      dVarRegex[i] = new RegExp(this.dVarStrTbl[i], "g");
-    var cVarRegex = [];
-    for (i = 0; i < this.cVarStrTbl.length; i++)
-      cVarRegex[i] = new RegExp(this.cVarStrTbl[i], "g");
-
     var rplcStr = [];
+    var gVarRegex = [];
     var date = new Date();
     for (i = 0; i < this.gVarStrTbl.length; i++) {
       switch (this.gVarStrTbl[i]) {
@@ -337,54 +336,77 @@ graph_load.png:
         default:
           rplcStr[i] = "**** REPLACE ERROR *****"
       }
-      this.gVarStrTbl[i] = new RegExp(this.gVarStrTbl[i], "g");
+      gVarRegex[i] = new RegExp(this.gVarStrTbl[i], "g");
     }
-    for (i = 0; i < tmpltStrTbl.length; i++)
-      for (var j = 0; j < this.gVarStrTbl.length; j++)
-        tmpltStrTbl[i].Str =
-          tmpltStrTbl[i].Str.replace(this.gVarStrTbl[j], rplcStr[j]);
-
-    // Replace domain and content variables in template blocks,
-    // '%DOMAIN%', '%HOST%', '%FQDN%', and '%LATEXT%'.
-    for (i = 0; i < tmpltStrTbl.length; i++) {
-      switch (tmpltStrTbl[i].Name) {
+    for (i = 0; i < this.tmpltStrTbl.length; i++) {
+      for (var j = 0; j < gVarRegex.length; j++) {
+        this.tmpltStrTbl[i].Str =
+          this.tmpltStrTbl[i].Str.replace(gVarRegex[j], rplcStr[j]);
+      }
+      // Picking up parts of split template file.
+      switch (this.tmpltStrTbl[i].Name) {
         case "HEADER":
-          var hdBlkStr = tmpltStrTbl[i].Str;
+          var hdBlkStr = this.tmpltStrTbl[i].Str;
+          break;
+        case "SECTION LINK":
+          var sMstrStr = this.tmpltStrTbl[i].Str;
+          break;
+        case "DOMAIN":
+          var dMstrStr = this.tmpltStrTbl[i].Str;
+          break;
+        case "CONTENTS":
+          var cMstrStr = this.tmpltStrTbl[i].Str;
           break;
         case "HORIZONTAL RULE":
-          var hrBlkStr = tmpltStrTbl[i].Str;
+          var hrBlkStr = this.tmpltStrTbl[i].Str;
           break;
         case "FOOTER":
-          var ftBlkStr = tmpltStrTbl[i].Str;
+          var ftBlkStr = this.tmpltStrTbl[i].Str;
       }
     }
+
+    // Replace section, domain and content variables in template blocks,
+    // '%DOMAIN%', '%HOST%', '%FQDN%', and '%LATEXT%'.
+    var sVarRegex = [];
+    for (i = 0; i < this.sVarStrTbl.length; i++)
+      sVarRegex[i] = new RegExp(this.sVarStrTbl[i], "g");
+    var dVarRegex = [];
+    for (i = 0; i < this.dVarStrTbl.length; i++)
+      dVarRegex[i] = new RegExp(this.dVarStrTbl[i], "g");
+    var cVarRegex = [];
+    for (i = 0; i < this.cVarStrTbl.length; i++)
+      cVarRegex[i] = new RegExp(this.cVarStrTbl[i], "g");
+
     var mainBlkStr = "";
     for (i = 0; i < this.graphArray.length; i++) {
-    // replace dVarStrTbl
-      for (k = 0; k < tmpltStrTbl.length; k++) { // WASTE maybe...
-        switch (tmpltStrTbl[k].Name) {
-          case "DOMAIN":
-            var dmBlkStr = tmpltStrTbl[k].Str;
-            break;
+      // replace sVarStrTbl
+      for (j = 0; j < this.graphArray[i].serverList.length; j++) {
+        var scBlkStr = sMstrStr;
+        for (k = 0; k < this.sVarStrTbl.length; k++) {
+          switch (this.sVarStrTbl[k]) {
+            case "%HOST%":
+              scBlkStr = scBlkStr.replace(sVarRegex[k],
+                                            this.graphArray[i].serverList[j]);
+          }
         }
+        mainBlkStr += scBlkStr;
       }
-      for (j = 0; j < this.dVarStrTbl.length; j++) { // WASTE maybe...
+    }
+    for (i = 0; i < this.graphArray.length; i++) {
+      // replace dVarStrTbl
+      var dmBlkStr = dMstrStr;
+      for (j = 0; j < this.dVarStrTbl.length; j++) {
         switch (this.dVarStrTbl[j]) {
           case "%DOMAIN%":
             dmBlkStr = dmBlkStr.replace(dVarRegex[j],
-                                                this.graphArray[i].domain);
+                                                    this.graphArray[i].domain);
         }
       }
       mainBlkStr += dmBlkStr;
       for (j = 0; j < this.graphArray[i].serverList.length; j++) {
-        for (k = 0; k < tmpltStrTbl.length; k++) { // WASTE maybe...
-          switch (tmpltStrTbl[k].Name) {
-            case "CONTENTS":
-              var ctBlkStr = tmpltStrTbl[k].Str;
-          }
-        }
         // replace cVarStrTbl
-        for (var k = 0; k < this.cVarStrTbl.length; k++) { // WASTE maybe...
+        var ctBlkStr = cMstrStr;
+        for (var k = 0; k < this.cVarStrTbl.length; k++) {
           switch (this.cVarStrTbl[k]) {
             case "%HOST%":
               ctBlkStr =
@@ -409,6 +431,7 @@ graph_load.png:
     this.saveFile(this.ResultGraphsFile, "UTF-8", rsltHtmlStr);
     this.Shell.Run(this.ResultGraphsFile);
   },
+  // Text file I/O functions: loadFile(File name, Encoding), saveFile(File name, Encoding, Content)
   loadFile: function(fileName, encoding) {
     var retStr = "";
     var fs = WScript.CreateObject("Scripting.FileSystemObject");
