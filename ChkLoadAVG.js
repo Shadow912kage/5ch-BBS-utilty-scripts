@@ -1,4 +1,4 @@
-//  ChkLoadAVG.js - Check Load average of 5ch server ver.0.2
+//  ChkLoadAVG.js - Check Load average of 5ch server ver.0.2.1
 //    Usage: ChkLoadAVG.js <server name>
 //
 //  On the JaneXeno
@@ -9,6 +9,7 @@
 //        Command: wscript "$BASEPATHScript/ChkLoadAVG.js"
 
 //  Version history
+//    0.2.1: Added displaying the Load averages status and its style.
 //    0.2: Brushed up the source code.
 //         Splitting the template file and the string replacement process.
 //         Added section link block (URL fragment).
@@ -23,13 +24,19 @@
 //view-source:https://web.archive.org/web/20230713114335/https://stat.5ch.net/graphs.html
 
 var ChkLoadAVG = {
-  Version: "0.2",
+  Version: "0.2.1",
 
   // Configuration variables and their values.
   ResultGraphsFile: "suzume\\graphs.html",
   TemplateGraphsFile: "suzume\\graphsTemplate.html",
 
   BbsMenuJsonUrl: "https://menu.5ch.net/bbsmenu.json",
+
+  sizeLATxt: "bytes=0-191", // 128 + 64 = 192 bytes, HTTP request header 'Range:' value.
+  thrshldLA: 5, // Load Average threshold value.
+  cH3ClssTbl: ["H3_OK", "H3_NG"], // Host status's CSS class strings table.
+  cLAClssTbl: ["LA_OK", "LA_NG"], // Load average's CSS class strings table.
+  cLAStrTbl: ["", " LA is high."],// Load average's description strings table.
 
   // Variables in the program and their values.
   preMarker: "<!-- DO NOT DELETE AND EDIT THIS COMMENT LINE\r?\n     ",
@@ -40,7 +47,7 @@ var ChkLoadAVG = {
   gVarStrTbl: ["%SCRNAME%", "%VERSION%", "%DATETIME%", "%LDATETIME%"],
   sVarStrTbl: ["%HOST%"],
   dVarStrTbl: ["%DOMAIN%"],
-  cVarStrTbl: ["%HOST%", "%FQDN%", "%LATEXT%"],
+  cVarStrTbl: ["%HOST%", "%FQDN%", "%LATEXT%", "%H3STAT%", "%LASTAT%", "%HOSTSTAT%"],
 
   // Global function.
   CheckLA: function() {
@@ -159,8 +166,7 @@ var ChkLoadAVG = {
       var LAtextUrl = "https://" + serverName + "/_service/la.txt";
       this.httpReq.open("GET", LAtextUrl, true);
       this.httpReq.setRequestHeader("User-Agent", this.UserAgent);
-      // 128 + 64 = 192 bytes
-      this.httpReq.setRequestHeader("Range", "bytes=0-191");
+      this.httpReq.setRequestHeader("Range", this.sizeLATxt);
       this.httpReq.send();
     } catch (e) {
        this.httpReqOnError(e, this.LAtextUrl + "‚ðŽæ“¾‚Å‚«‚Ü‚¹‚ñ‚Å‚µ‚½");
@@ -170,18 +176,26 @@ var ChkLoadAVG = {
     var laLatest = this.httpReq.responseText.match(/^(.+)\r?\n/);
     if (laLatest[0]) {
       this.laText = laLatest[1].replace(/\s+/g, " ");
-      var lamatch = this.laText.match(/^(\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}:\d{2})\s+(\d{10})\s+(\d{1,2}:\d{2}(?:AM|PM))\s+(up\s+\d+\s+days?,\s+\d+(?::\d{2}|\s+(?:hrs?|mins?)),\s+\d+\s+users?,)\s+(load averages:\s+\d+\.\d{2},\s+\d+\.\d{2},\s+\d+\.\d{2})\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+)\s+(\d+)\s+(\d+)/);
+      var lamatch = this.laText.match(/^(\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}:\d{2})\s+(\d{10})\s+(\d{1,2}:\d{2}(?:AM|PM))\s+(up\s+\d+\s+days?,\s+\d+(?::\d{2}|\s+(?:hrs?|mins?)),\s+\d+\s+users?,)\s+(load averages:\s+(\d+\.\d{2}),\s+\d+\.\d{2},\s+\d+\.\d{2})\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+)\s+(\d+)\s+(\d+)/);
       if (lamatch) {
         this.latestLaTxt = lamatch[0];
         this.graphLaTxt = lamatch[1] + " " + lamatch[3] + " " + lamatch[4] +
           " " + lamatch[5];
-        this.bStatTxt = "Call: " + lamatch[6] + "\nPost: " + lamatch[7] +
-          "\nTotal: " + lamatch[8];
-        this.prcsTxt = "httpd: " + lamatch[10] + "\nnginx: " + lamatch[11];
+        this.bStatTxt = "Call: " + lamatch[7] + "\nPost: " + lamatch[8] +
+          "\nTotal: " + lamatch[9];
+        this.prcsTxt = "httpd: " + lamatch[11] + "\nnginx: " + lamatch[12];
         this.unixTimeTxt = lamatch[2];
-        this.unknwnPrmsTxt = lamatch[9];
+        this.unknwnPrmsTxt = lamatch[10];
+        this.curLA = lamatch[6];
       }
     }
+  },
+  // Is the load average high or not?
+  isLAHigh: function () {
+    if (this.curLA < this.thrshldLA)
+      return 0;
+    else
+      return 1;
   },
   // Display Load averages text
   dispLoadAVG: function() {
@@ -421,6 +435,16 @@ graph_load.png:
               this.getLoadAVG(this.graphArray[i].serverList[j] + "." +
                 this.graphArray[i].domain);
               ctBlkStr = ctBlkStr.replace(cVarRegex[k], this.graphLaTxt);
+              break;
+            case "%H3STAT%":
+              ctBlkStr = ctBlkStr.replace(cVarRegex[k], this.cH3ClssTbl[this.isLAHigh()]);
+              break;
+            case "%LASTAT%":
+              ctBlkStr = ctBlkStr.replace(cVarRegex[k], this.cLAClssTbl[this.isLAHigh()]);
+              break;
+            case "%HOSTSTAT%":
+              ctBlkStr = ctBlkStr.replace(cVarRegex[k], this.cLAStrTbl[this.isLAHigh()]);
+              break;
           }
         }
         mainBlkStr += ctBlkStr;
