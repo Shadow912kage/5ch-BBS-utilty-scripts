@@ -1,4 +1,4 @@
-//  hissi Checker via hissi.org ver.0.1.3
+//  hissi Checker via hissi.org ver.0.1.4
 //    Usage: hissiChecker.js <bbs name> <local dat path> <res number> <ID or else>
 //
 //  On the JaneXeno
@@ -6,6 +6,8 @@
 //     Command: wscript "$BASEPATHScript/hissiChecker.js" "$URL" "$LOCALDAT" $NUMBER ID/else
 
 //  Version history
+//    0.1.4: Added process to add the terminal type '0' to the end of the ID,
+//         : if the ID is 8 digits.
 //    0.1.3: Added If 'ID' and 'Trip' contain '+', then convert to '%2B'
 //           JScript's 'application/x-www-form-urlencoded' bug, maybe...
 //    0.1.2: Added 'ID' checking condition to the if statement
@@ -20,7 +22,7 @@
 */
 
 var hissiChecker = {
-  Version: "0.1.3",
+  Version: "0.1.4",
 
   // hissi checker's site parameters
   hissiUrlBase: "http://hissi.org/",
@@ -32,8 +34,13 @@ var hissiChecker = {
     this.initialize();
     this.chkTargetUrl();
     this.getTargetResDate();
-    this.createFormAndPost();
-    this.sendResult();
+    this.createForm();
+    this.postForm(this.url, this.dat, this.resultHTML);
+    this.sendResult(this.resultHTML);
+    if (this.targetID2) {
+      this.postForm(this.url, this.dat2, this.resultHTML2);
+      this.sendResult(this.resultHTML2);
+    }
   },
   initialize: function() {
     this.WinTitle = "必死チェッカーもどきScript (" + WScript.ScriptName + " ver." + this.Version + ")";
@@ -43,6 +50,7 @@ var hissiChecker = {
     this.setupHttpReq();
     var scrFolder = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf("\\"));
     this.resultHTML = scrFolder + "//hissiResult.html";
+    this.resultHTML2 = scrFolder + "//hissiResult2.html";
     this.ErrMsg = "";
     this.Shell = WScript.CreateObject("WScript.Shell");
     if (this.IdOrTrip == "ID")
@@ -80,7 +88,7 @@ var hissiChecker = {
     }
     var TIME_OUT = 3000; // 3000 msec
     if (this.useWinHttp) {
-      this.httpReq.SetTimeouts(TIME_OUT, TIME_OUT, TIME_OUT, TIME_OUT);
+      this.httpReq.setTimeouts(TIME_OUT, TIME_OUT, TIME_OUT, TIME_OUT);
     } else {
       this.httpReq.timeout = TIME_OUT;
       this.httpReq.ontimeout = function() {
@@ -90,9 +98,9 @@ var hissiChecker = {
     }
   },
   httpReqOnError: function(e, msg) {
-    this.ErrMsg = msg + "\n";
     // ref. スクリプトを使用したデータの取得 - Win32 apps | Microsoft Learn
     // https://learn.microsoft.com/ja-jp/windows/win32/winhttp/retrieving-data-using-script
+    this.ErrMsg = msg + "\n";
     this.ErrMsg += e + "\n";
     this.ErrMsg += "WinHTTP returned error: " + (e.number & 0xffff).toString() + "\n\n";
     this.ErrMsg += e.description;
@@ -127,7 +135,16 @@ var hissiChecker = {
       var dateid = res.match(/<>(?:(\d{4})\/(\d{2})\/(\d{2})\([日月火水木金土]\) \d{2}:\d{2}:\d{2}\.\d{2})(?: (?:(?:ID:([-+\/0-9A-Za-z]+))●?)?)?(?: .)?( BE:[^<>]+)?<>/);
       if (dateid && dateid[4]) {
         this.targetDate = dateid[1] + dateid[2] + dateid[3];
-        this.targetID = dateid[4].replace(/\+/g, "%2B");
+        this.targetID = dateid[4];
+        var addTermType = false;
+        if (!this.targetID.match(/[-+\/0-9A-Za-z]{9}/)) {
+          var msg = "ID が 8桁です。末尾に端末種別「0」を追加したものでも検索しますか？";
+          if (this.Shell.Popup(msg, 0, this.WinTitle, 4) == 6)
+            addTermType = true;
+        }
+        this.targetID = this.targetID.replace(/\+/g, "%2B");
+        if (addTermType)
+          this.targetID2 = this.targetID + "0";
       } else {
         this.ErrMsg = "ID のない板・スレッド・書き込みです";
         this.DispErr();
@@ -147,16 +164,18 @@ var hissiChecker = {
     this.Shell.Popup(this.ErrMsg, 0, this.WinTitle);
     WScript.Quit();
   },
-  createFormAndPost: function() { // Create hissi.org form data and POST it.
-    var url = "";
-    var dat = "";
+  createForm: function() { // Create hissi.org form data.
     if (this.IdOrTrip) {
-      url = this.hissiUrlBase + this.hissiIdSearch1 + this.folderName + this.hissiIdSearch2;
-      dat = "date=" + this.targetDate + "&ID=" + this.targetID;
+      this.url = this.hissiUrlBase + this.hissiIdSearch1 + this.folderName + this.hissiIdSearch2;
+      this.dat = "date=" + this.targetDate + "&ID=" + this.targetID;
+      if (this.targetID2)
+        this.dat2 = "date=" + this.targetDate + "&ID=" + this.targetID2;
     } else {
-      url = this.hissiUrlBase + this.hissiTripSearch;
-      dat = "date=" + this.targetDate + "&Board=" + this.folderName + "&Trip=" + this.targetTrip;
+      this.url = this.hissiUrlBase + this.hissiTripSearch;
+      this.dat = "date=" + this.targetDate + "&Board=" + this.folderName + "&Trip=" + this.targetTrip;
     }
+  },
+  postForm: function(url, dat, resultHTML) {
     try {
       this.httpReq.open("POST", url, true);
       this.httpReq.setRequestHeader("User-Agent", this.UserAgent);
@@ -182,10 +201,10 @@ and the receiving local side processes it as is with UTF-16LE BOM.
     strm.Open();
     strm.Write(this.httpReq.ResponseBody);
     strm.Position = 2; // Skip BOM(FF FE), top of the ResponseBody(encoded with UTF-16)
-    strm.SaveToFile(this.resultHTML, 2); // over write, raw HTTP response
+    strm.SaveToFile(resultHTML, 2); // over write, raw HTTP response
     strm.Type = 2; // adTypeText
     strm.Charset = "shift_jis";
-    strm.LoadFromFile(this.resultHTML);
+    strm.LoadFromFile(resultHTML);
     var tmp = strm.ReadText();
     var resultData = "";
     if (this.IdOrTrip) // Replace hissi Checker's URI string
@@ -194,11 +213,11 @@ and the receiving local side processes it as is with UTF-16LE BOM.
       resultData = tmp.replace(/\.\/(read\.php\/\w+\/\d{8}\/\w+\.html)/g, this.hissiUrlBase + "$1");
     strm.Position = 0; // Reset writing position
     strm.WriteText(resultData);
-    strm.SaveToFile(this.resultHTML, 2); // over write, result HTML
+    strm.SaveToFile(resultHTML, 2); // over write, result HTML
     strm.Close();
   },
-  sendResult: function() {
-    this.Shell.Run(this.resultHTML);
+  sendResult: function(resultHTML) {
+    this.Shell.Run(resultHTML);
   }
 }
 
