@@ -1,4 +1,4 @@
-//  ChkLoadAVG.js - Check Load average of 5ch server ver.0.2.1
+//  ChkLoadAVG.js - Check Load average of 5ch server ver.0.2.2
 //    Usage: ChkLoadAVG.js <server name>
 //
 //  On the JaneXeno
@@ -9,6 +9,8 @@
 //        Command: wscript "$BASEPATHScript/ChkLoadAVG.js"
 
 //  Version history
+//    0.2.2: Corrected regex for la.txt, from "(?:hrs?|mins?)" to "(?:hrs?|mins?|sec)".
+//         : Added an error report function of regex for la.txt.
 //    0.2.1: Added displaying the Load averages status and its style.
 //    0.2: Brushed up the source code.
 //         Splitting the template file and the string replacement process.
@@ -24,7 +26,7 @@
 //view-source:https://web.archive.org/web/20230713114335/https://stat.5ch.net/graphs.html
 
 var ChkLoadAVG = {
-  Version: "0.2.1",
+  Version: "0.2.2",
 
   // Configuration variables and their values.
   ResultGraphsFile: "suzume\\graphs.html",
@@ -75,6 +77,7 @@ var ChkLoadAVG = {
       WScript.ScriptFullName.lastIndexOf("\\") + 1);
     this.ResultGraphsFile = this.scrFolder + this.ResultGraphsFile;
     this.TemplateGraphsFile = this.scrFolder + this.TemplateGraphsFile;
+    this.ErrReportFile = this.scrFolder + WScript.ScriptName + ".Err.txt";
     this.errMsg = "";
     this.setupHttpReq();
 
@@ -176,7 +179,7 @@ var ChkLoadAVG = {
     var laLatest = this.httpReq.responseText.match(/^(.+)\r?\n/);
     if (laLatest[0]) {
       this.laText = laLatest[1].replace(/\s+/g, " ");
-      var lamatch = this.laText.match(/^(\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}:\d{2})\s+(\d{10})\s+(\d{1,2}:\d{2}(?:AM|PM))\s+(up\s+\d+\s+days?,\s+\d+(?::\d{2}|\s+(?:hrs?|mins?)),\s+\d+\s+users?,)\s+(load averages:\s+(\d+\.\d{2}),\s+\d+\.\d{2},\s+\d+\.\d{2})\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+)\s+(\d+)\s+(\d+)/);
+      var lamatch = this.laText.match(/^(\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}:\d{2})\s+(\d{10})\s+(\d{1,2}:\d{2}(?:AM|PM))\s+(up\s+\d+\s+days?,\s+\d+(?::\d{2}|\s+(?:hrs?|mins?|sec)),\s+\d+\s+users?,)\s+(load averages:\s+(\d+\.\d{2}),\s+\d+\.\d{2},\s+\d+\.\d{2})\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+)\s+(\d+)\s+(\d+)/);
       if (lamatch) {
         this.latestLaTxt = lamatch[0];
         this.graphLaTxt = lamatch[1] + " " + lamatch[3] + " " + lamatch[4] +
@@ -221,10 +224,12 @@ var ChkLoadAVG = {
         return true;
       else
         return false;
-    }
-    else {
-      var msg = "***** ERROR: la.txt was unmatched with the regex! *****\n\n";
-      this.Shell.Popup(msg + this.laText, 0, this.WinTitle);
+    } else {
+      var msg = "***** ERROR: la.txt was unmatched with the regex! *****\n\n" +
+                this.laText + "\n\nPlease send \"" + this.ErrReportFile + "\" to the author.";
+      this.Shell.Popup(msg, 0, this.WinTitle);
+      msg = WScript.ScriptName + " ver." + this.Version + "\n" + msg;
+      this.saveFile(this.ErrReportFile, "UTF-8", msg);
       return false;
     }
 /* ===============================================
