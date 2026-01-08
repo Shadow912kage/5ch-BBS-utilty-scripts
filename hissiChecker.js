@@ -1,4 +1,4 @@
-//  hissi Checker via hissi.org ver.0.1.4
+//  hissi Checker via hissi.org ver.0.1.5
 //    Usage: hissiChecker.js <bbs name> <local dat path> <res number> <ID or else>
 //
 //  On the JaneXeno
@@ -6,6 +6,8 @@
 //     Command: wscript "$BASEPATHScript/hissiChecker.js" "$URL" "$LOCALDAT" $NUMBER ID/else
 
 //  Version history
+//    0.1.5: Changed the method of getting Windows information.
+//         : Added UBR to Windows version number string.
 //    0.1.4: Added process to add the terminal type '0' to the end of the ID,
 //         : if the ID is 8 digits.
 //    0.1.3: Added If 'ID' and 'Trip' contain '+', then convert to '%2B'
@@ -22,7 +24,7 @@
 */
 
 var hissiChecker = {
-  Version: "0.1.4",
+  Version: "0.1.5",
 
   // hissi checker's site parameters
   hissiUrlBase: "http://hissi.org/",
@@ -43,7 +45,9 @@ var hissiChecker = {
     }
   },
   initialize: function() {
+    this.Shell = WScript.CreateObject("WScript.Shell");
     this.WinTitle = "必死チェッカーもどきScript (" + WScript.ScriptName + " ver." + this.Version + ")";
+    this.getWindowsInfo();
     this.getWindowsVersion();
     this.UserAgent = "Monazilla/1.00 hissiChecker.Js/" + this.Version +
     " Windows/" + this.WinVersion;
@@ -52,19 +56,69 @@ var hissiChecker = {
     this.resultHTML = scrFolder + "//hissiResult.html";
     this.resultHTML2 = scrFolder + "//hissiResult2.html";
     this.ErrMsg = "";
-    this.Shell = WScript.CreateObject("WScript.Shell");
     if (this.IdOrTrip == "ID")
       this.IdOrTrip = true;
     else
       this.IdOrTrip = false;
   },
+  //      Solved: Read/write registry values in javascript | Experts Exchange
+  //      https://www.experts-exchange.com/questions/22601573/Read-write-registry-values-in-javascript.html
+  //      registry - HKLM\Software\Microsoft\Windows NT\CurrentVersion: What's the difference between CurrentBuild and CurrentBuildNu mber? - Stack Overflow
+  //      https://stackoverflow.com/questions/37877599/hklm-software-microsoft-windows-nt-currentversion-whats-the-difference-between
+  //      テクニック.1 - 更新管理に役立つバージョン、ビルド情報の取得
+  //      https://www2.say-tech.co.jp/special/ryo-yamaichi/tec-001
+  getWindowsInfo: function() {
+    var regVersionInfo = {
+      regKeyRoot: "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\",
+      regKeyTbl: [
+      "CurrentBuild",              // Actual system build number
+      "CurrentBuildNumber",        // Compatibility mode build number
+      "CurrentMajorVersionNumber", // Windows major version number
+      "CurrentMinorVersionNumber", // Windows minor version number
+      "CurrentVersion",            // Windows version number, OLD
+      "DisplayVersion",            // 2xHx
+      "EditionID",                 // Professional/Home
+      "ProductName",               // Windows xx Pro/Home
+      "ReleaseId",                 // 200x
+      "UBR"                        // Update Build Revision
+      ]
+    };
+    var regKey = "";
+    this.WindowsInfo = {};
+    for (var i = 0; i < regVersionInfo.regKeyTbl.length; i++) {
+      regKey = regVersionInfo.regKeyRoot + regVersionInfo.regKeyTbl[i];
+      this.WindowsInfo[regVersionInfo.regKeyTbl[i]] = this.Shell.RegRead(regKey);
+    }
+    // ProductFullName
+    this.WindowsInfo.ProductFullName = this.WindowsInfo.ProductName;
+    if (this.WindowsInfo.DisplayVersion)
+      this.WindowsInfo.ProductFullName += " " + this.WindowsInfo.DisplayVersion;
+    else
+      this.WindowsInfo.ProductFullName += " " + this.WindowsInfo.ReleaseId;
+    // FullVersionNumber
+    if (this.WindowsInfo.CurrentMajorVersionNumber)
+      this.WindowsInfo.FullVersionNumber =
+        this.WindowsInfo.CurrentMajorVersionNumber + "." +
+        this.WindowsInfo.CurrentMinorVersionNumber;
+    else
+      this.WindowsInfo.FullVersionNumber = this.WindowsInfo.CurrentVersion;
+    // FullBuildNumber
+    this.WindowsInfo.FullBuildNumber = this.WindowsInfo.CurrentBuild;
+    if (this.WindowsInfo.UBR)
+      this.WindowsInfo.FullBuildNumber += "." + this.WindowsInfo.UBR;
+  },
+  getWindowsVersion: function() {
+/*
   // ref. windows - Find OS Name/Version using JScript - Stack Overflow
   //      https://stackoverflow.com/questions/351282/find-os-name-version-using-jscript
-  getWindowsVersion: function() {
     var objWMISrvc = GetObject("winmgmts:\\\\.\\root\\CIMV2");
-    var enumItems = new Enumerator(objWMISrvc.ExecQuery("Select * From Win32_OperatingSystem"));
+    var enumItems = new Enumerator(
+      objWMISrvc.ExecQuery("Select * From Win32_OperatingSystem"));
     var sys = enumItems.item();
-    this.WinVersion = sys.Version;
+    this.winVersion = sys.Version;
+*/
+    this.WinVersion = this.WindowsInfo.FullVersionNumber + "." +
+      this.WindowsInfo.FullBuildNumber;
   },
   setupHttpReq: function() {
     // ref. XMLHttpRequest を作成する (mixi 日記アーカイブ)

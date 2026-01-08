@@ -1,4 +1,4 @@
-//  ChkLoadAVG.js - Check Load average of 5ch server ver.0.2.2
+//  ChkLoadAVG.js - Check Load average of 5ch server ver.0.2.3
 //    Usage: ChkLoadAVG.js <server name>
 //
 //  On the JaneXeno
@@ -9,6 +9,8 @@
 //        Command: wscript "$BASEPATHScript/ChkLoadAVG.js"
 
 //  Version history
+//    0.2.3: Changed the method of getting Windows information.
+//         : Added UBR to Windows version number string.
 //    0.2.2: Corrected regex for la.txt, from "(?:hrs?|mins?)" to "(?:hrs?|mins?|sec)".
 //         : Added an error report function of regex for la.txt.
 //    0.2.1: Added displaying the Load averages status and its style.
@@ -26,7 +28,7 @@
 //view-source:https://web.archive.org/web/20230713114335/https://stat.5ch.net/graphs.html
 
 var ChkLoadAVG = {
-  Version: "0.2.2",
+  Version: "0.2.3",
 
   // Configuration variables and their values.
   ResultGraphsFile: "suzume\\graphs.html",
@@ -67,12 +69,13 @@ var ChkLoadAVG = {
 
   // Private functions.
   init: function() {
+    this.Shell = new ActiveXObject("WScript.Shell");
     this.WinTitle = "Load Averages (" + WScript.ScriptName + " ver." +
       this.Version + ")";
+    this.getWindowsInfo();
     this.getWindowsVersion();
     this.UserAgent = "Monazilla/1.00 ChkLoadAVG.Js/" + this.Version +
       " Windows/" + this.winVersion;
-    this.Shell = new ActiveXObject("WScript.Shell");
     this.scrFolder = WScript.ScriptFullName.substring(0,
       WScript.ScriptFullName.lastIndexOf("\\") + 1);
     this.ResultGraphsFile = this.scrFolder + this.ResultGraphsFile;
@@ -86,14 +89,64 @@ var ChkLoadAVG = {
     this.graphArray = [{domain: "5ch.net", serverList: this.serverList5ch},
                        {domain: "bbspink.com", serverList: this.serverListPnk}];
   },
+  //      Solved: Read/write registry values in javascript | Experts Exchange
+  //      https://www.experts-exchange.com/questions/22601573/Read-write-registry-values-in-javascript.html
+  //      registry - HKLM\Software\Microsoft\Windows NT\CurrentVersion: What's the difference between CurrentBuild and CurrentBuildNu mber? - Stack Overflow
+  //      https://stackoverflow.com/questions/37877599/hklm-software-microsoft-windows-nt-currentversion-whats-the-difference-between
+  //      テクニック.1 - 更新管理に役立つバージョン、ビルド情報の取得
+  //      https://www2.say-tech.co.jp/special/ryo-yamaichi/tec-001
+  getWindowsInfo: function() {
+    var regVersionInfo = {
+      regKeyRoot: "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\",
+      regKeyTbl: [
+      "CurrentBuild",              // Actual system build number
+      "CurrentBuildNumber",        // Compatibility mode build number
+      "CurrentMajorVersionNumber", // Windows major version number
+      "CurrentMinorVersionNumber", // Windows minor version number
+      "CurrentVersion",            // Windows version number, OLD
+      "DisplayVersion",            // 2xHx
+      "EditionID",                 // Professional/Home
+      "ProductName",               // Windows xx Pro/Home
+      "ReleaseId",                 // 200x
+      "UBR"                        // Update Build Revision
+      ]
+    };
+    var regKey = "";
+    this.WindowsInfo = {};
+    for (var i = 0; i < regVersionInfo.regKeyTbl.length; i++) {
+      regKey = regVersionInfo.regKeyRoot + regVersionInfo.regKeyTbl[i];
+      this.WindowsInfo[regVersionInfo.regKeyTbl[i]] = this.Shell.RegRead(regKey);
+    }
+    // ProductFullName
+    this.WindowsInfo.ProductFullName = this.WindowsInfo.ProductName;
+    if (this.WindowsInfo.DisplayVersion)
+      this.WindowsInfo.ProductFullName += " " + this.WindowsInfo.DisplayVersion;
+    else
+      this.WindowsInfo.ProductFullName += " " + this.WindowsInfo.ReleaseId;
+    // FullVersionNumber
+    if (this.WindowsInfo.CurrentMajorVersionNumber)
+      this.WindowsInfo.FullVersionNumber =
+        this.WindowsInfo.CurrentMajorVersionNumber + "." +
+        this.WindowsInfo.CurrentMinorVersionNumber;
+    else
+      this.WindowsInfo.FullVersionNumber = this.WindowsInfo.CurrentVersion;
+    // FullBuildNumber
+    this.WindowsInfo.FullBuildNumber = this.WindowsInfo.CurrentBuild;
+    if (this.WindowsInfo.UBR)
+      this.WindowsInfo.FullBuildNumber += "." + this.WindowsInfo.UBR;
+  },
+  getWindowsVersion: function() {
+/*
   // ref. windows - Find OS Name/Version using JScript - Stack Overflow
   //      https://stackoverflow.com/questions/351282/find-os-name-version-using-jscript
-  getWindowsVersion: function() {
     var objWMISrvc = GetObject("winmgmts:\\\\.\\root\\CIMV2");
     var enumItems = new Enumerator(
       objWMISrvc.ExecQuery("Select * From Win32_OperatingSystem"));
     var sys = enumItems.item();
     this.winVersion = sys.Version;
+*/
+    this.winVersion = this.WindowsInfo.FullVersionNumber + "." +
+      this.WindowsInfo.FullBuildNumber;
   },
   setupHttpReq: function() {
     // ref. XMLHttpRequest を作成する (mixi 日記アーカイブ)
