@@ -1,4 +1,4 @@
-//  hissi Checker via hissi.org ver.0.1.5
+//  hissi Checker via hissi.org ver.0.1.6
 //    Usage: hissiChecker.js <bbs name> <local dat path> <res number> <ID or else>
 //
 //  On the JaneXeno
@@ -6,6 +6,9 @@
 //     Command: wscript "$BASEPATHScript/hissiChecker.js" "$URL" "$LOCALDAT" $NUMBER ID/else
 
 //  Version history
+//    0.1.6: Corrected regex of 'Trip' check for '</b>[É≥|(|ÅL|ÑD|`|)|É≥] BBxed!!<b> '.
+//         : from /^[^<]*<\/b>Åü([^\s]{10,12})\s<b>.*<>[^<]*<>(\d{4})\/(\d{2})\/(\d{2})/
+//         : to /^.*<\/b>Åü([^\s]{10,12})\s<b>.*<>[^<]*<>(\d{4})\/(\d{2})\/(\d{2})/
 //    0.1.5: Changed the method of getting Windows information.
 //         : Added UBR to Windows version number string.
 //    0.1.4: Added process to add the terminal type '0' to the end of the ID,
@@ -24,7 +27,7 @@
 */
 
 var hissiChecker = {
-  Version: "0.1.5",
+  Version: "0.1.6",
 
   // hissi checker's site parameters
   hissiUrlBase: "http://hissi.org/",
@@ -204,7 +207,7 @@ var hissiChecker = {
         this.DispErr();
       }
     } else { // TRIP check
-      var tripdate = res.match(/^[^<]*<\/b>Åü([^\s]{10,12})\s<b>.*<>[^<]*<>(\d{4})\/(\d{2})\/(\d{2})/);
+      var tripdate = res.match(/^.*<\/b>Åü([^\s]{10,12})\s<b>.*<>[^<]*<>(\d{4})\/(\d{2})\/(\d{2})/);
       if (tripdate) {
         this.targetTrip = tripdate[1].replace(/\+/g, "%2B");
         this.targetDate = tripdate[2] + tripdate[3] + tripdate[4];
