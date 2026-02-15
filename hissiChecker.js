@@ -1,4 +1,4 @@
-//  hissi Checker via hissi.org ver.0.1.6
+//  hissi Checker via hissi.org ver.0.1.7
 //    Usage: hissiChecker.js <bbs name> <local dat path> <res number> <ID or else>
 //
 //  On the JaneXeno
@@ -6,6 +6,8 @@
 //     Command: wscript "$BASEPATHScript/hissiChecker.js" "$URL" "$LOCALDAT" $NUMBER ID/else
 
 //  Version history
+//    0.1.7: Added processing for when a string representing a specific date and
+//         : time is appended to the end of an ID.
 //    0.1.6: Corrected regex of 'Trip' check for '</b>[Φ|(|´|Д|`|)|Φ] BBxed!!<b> '.
 //         : from /^[^<]*<\/b>◆([^\s]{10,12})\s<b>.*<>[^<]*<>(\d{4})\/(\d{2})\/(\d{2})/
 //         : to /^.*<\/b>◆([^\s]{10,12})\s<b>.*<>[^<]*<>(\d{4})\/(\d{2})\/(\d{2})/
@@ -24,10 +26,12 @@
   http://hissi.org/
   Command.dat - JaneXeno @ ウィキ - atwiki（アットウィキ）
   https://w.atwiki.jp/janexeno/pages/79.html
+  BBS_SLIP - ５ちゃんねるwiki
+  https://info.5ch.net/index.php/BBS_SLIP
 */
 
 var hissiChecker = {
-  Version: "0.1.6",
+  Version: "0.1.7",
 
   // hissi checker's site parameters
   hissiUrlBase: "http://hissi.org/",
@@ -46,6 +50,14 @@ var hissiChecker = {
       this.postForm(this.url, this.dat2, this.resultHTML2);
       this.sendResult(this.resultHTML2);
     }
+    if (this.targetID3) {
+      this.postForm(this.url, this.dat3, this.resultHTML3);
+      this.sendResult(this.resultHTML3);
+    }
+    if (this.targetID4) {
+      this.postForm(this.url, this.dat4, this.resultHTML4);
+      this.sendResult(this.resultHTML4);
+    }
   },
   initialize: function() {
     this.Shell = WScript.CreateObject("WScript.Shell");
@@ -58,6 +70,8 @@ var hissiChecker = {
     var scrFolder = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf("\\"));
     this.resultHTML = scrFolder + "//hissiResult.html";
     this.resultHTML2 = scrFolder + "//hissiResult2.html";
+    this.resultHTML3 = scrFolder + "//hissiResult3.html";
+    this.resultHTML4 = scrFolder + "//hissiResult4.html";
     this.ErrMsg = "";
     if (this.IdOrTrip == "ID")
       this.IdOrTrip = true;
@@ -189,12 +203,17 @@ var hissiChecker = {
       var res = dat.ReadLine();
     dat.Close();
     if (this.IdOrTrip) { // ID check
-      var dateid = res.match(/<>(?:(\d{4})\/(\d{2})\/(\d{2})\([日月火水木金土]\) \d{2}:\d{2}:\d{2}\.\d{2})(?: (?:(?:ID:([-+\/0-9A-Za-z]+))●?)?)?(?: .)?( BE:[^<>]+)?<>/);
+      var dateid = res.match(/<>(?:(\d{4})\/(\d{2})\/(\d{2})\([日月火水木金土]\) \d{2}:\d{2}:\d{2}\.\d{2})(?: (?:(?:ID:([-+\/\.0-9A-Za-z]+))●?)?)?(?: .)?( BE:[^<>]+)?<>/);
       if (dateid && dateid[4]) {
         this.targetDate = dateid[1] + dateid[2] + dateid[3];
-        this.targetID = dateid[4];
+        var strID = dateid[4].match(/([-+\/0-9A-Za-z]{8,9})([\.0-9A-Za-z]{0,9})/);
+        if (strID && strID[1]) {
+          this.targetID = strID[1];
+          if (strID[2])
+            var annivDnT = strID[2];
+        }
         var addTermType = false;
-        if (!this.targetID.match(/[-+\/0-9A-Za-z]{9}/)) {
+        if (this.targetID.length == 8) {
           var msg = "ID が 8桁です。末尾に端末種別「0」を追加したものでも検索しますか？";
           if (this.Shell.Popup(msg, 0, this.WinTitle, 4) == 6)
             addTermType = true;
@@ -202,6 +221,20 @@ var hissiChecker = {
         this.targetID = this.targetID.replace(/\+/g, "%2B");
         if (addTermType)
           this.targetID2 = this.targetID + "0";
+
+        if (annivDnT) {
+          var msg = "特別な日時における文字列「" + annivDnT + "」が ID に追加されています。\n追加されていないものでも検索しますか？";
+          if (this.Shell.Popup(msg, 0, this.WinTitle, 4) == 6) {
+            var tmp = this.targetID;
+            this.targetID += annivDnT;
+            this.targetID3 = tmp;
+            if (addTermType) {
+              var tmp = this.targetID2;
+              this.targetID2 += annivDnT;
+              this.targetID4 = tmp;
+            }
+          }
+        }
       } else {
         this.ErrMsg = "ID のない板・スレッド・書き込みです";
         this.DispErr();
@@ -227,6 +260,10 @@ var hissiChecker = {
       this.dat = "date=" + this.targetDate + "&ID=" + this.targetID;
       if (this.targetID2)
         this.dat2 = "date=" + this.targetDate + "&ID=" + this.targetID2;
+      if (this.targetID3)
+        this.dat3 = "date=" + this.targetDate + "&ID=" + this.targetID3;
+      if (this.targetID4)
+        this.dat4 = "date=" + this.targetDate + "&ID=" + this.targetID4;
     } else {
       this.url = this.hissiUrlBase + this.hissiTripSearch;
       this.dat = "date=" + this.targetDate + "&Board=" + this.folderName + "&Trip=" + this.targetTrip;
