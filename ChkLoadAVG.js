@@ -1,4 +1,4 @@
-//  ChkLoadAVG.js - Check Load average of 5ch server ver.0.2.3
+//  ChkLoadAVG.js - Check Load average of 5ch server ver.0.2.5
 //    Usage: ChkLoadAVG.js <server name>
 //
 //  On the JaneXeno
@@ -9,6 +9,9 @@
 //        Command: wscript "$BASEPATHScript/ChkLoadAVG.js"
 
 //  Version history
+//    0.2.5: Changed 5ch TLD name, '.net' to '.io'.
+//         : Excepted bbspink.com.
+//    0.2.4: Added information on Windows architecture 64/32-bit.
 //    0.2.3: Changed the method of getting Windows information.
 //         : Added UBR to Windows version number string.
 //    0.2.2: Corrected regex for la.txt, from "(?:hrs?|mins?)" to "(?:hrs?|mins?|sec)".
@@ -20,21 +23,21 @@
 //    0.1: Initial release
 
 //  5ch bbsmenu(.json)
-//    https://menu.5ch.net/bbsmenu.json
+//    https://menu.5ch.io/bbsmenu.json
 //      "url":"https://<server name>/<board name>/"
 //  5ch Load Average files
 //    https://<server name>/_service/graph_load.png
 //    https://<server name>/_service/la.txt
-//view-source:https://web.archive.org/web/20230713114335/https://stat.5ch.net/graphs.html
+//view-source:https://web.archive.org/web/20230713114335/https://stat.5ch.io/graphs.html
 
 var ChkLoadAVG = {
-  Version: "0.2.3",
+  Version: "0.2.5",
 
   // Configuration variables and their values.
   ResultGraphsFile: "suzume\\graphs.html",
   TemplateGraphsFile: "suzume\\graphsTemplate.html",
 
-  BbsMenuJsonUrl: "https://menu.5ch.net/bbsmenu.json",
+  BbsMenuJsonUrl: "https://menu.5ch.io/bbsmenu.json",
 
   sizeLATxt: "bytes=0-191", // 128 + 64 = 192 bytes, HTTP request header 'Range:' value.
   thrshldLA: 5, // Load Average threshold value.
@@ -86,8 +89,9 @@ var ChkLoadAVG = {
 
     this.serverList5ch = [];
     this.serverListPnk = [];
-    this.graphArray = [{domain: "5ch.net", serverList: this.serverList5ch},
-                       {domain: "bbspink.com", serverList: this.serverListPnk}];
+//    this.graphArray = [{domain: "5ch.io", serverList: this.serverList5ch},
+//                       {domain: "bbspink.com", serverList: this.serverListPnk}];
+    this.graphArray = [{domain: "5ch.io", serverList: this.serverList5ch}];
   },
   //      Solved: Read/write registry values in javascript | Experts Exchange
   //      https://www.experts-exchange.com/questions/22601573/Read-write-registry-values-in-javascript.html
@@ -97,8 +101,9 @@ var ChkLoadAVG = {
   //      https://www2.say-tech.co.jp/special/ryo-yamaichi/tec-001
   getWindowsInfo: function() {
     var regVersionInfo = {
-      regKeyRoot: "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\",
-      regKeyTbl: [
+      regKeyRoot: ["HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\",
+      "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Session Manager\\Environment\\"],
+      regKeyTbl: [[
       "CurrentBuild",              // Actual system build number
       "CurrentBuildNumber",        // Compatibility mode build number
       "CurrentMajorVersionNumber", // Windows major version number
@@ -109,13 +114,16 @@ var ChkLoadAVG = {
       "ProductName",               // Windows xx Pro/Home
       "ReleaseId",                 // 200x
       "UBR"                        // Update Build Revision
-      ]
+      ],
+      ["PROCESSOR_ARCHITECTURE"]]  // AMD64/x86, Windows architecture 64 or 32-bit
     };
     var regKey = "";
     this.WindowsInfo = {};
-    for (var i = 0; i < regVersionInfo.regKeyTbl.length; i++) {
-      regKey = regVersionInfo.regKeyRoot + regVersionInfo.regKeyTbl[i];
-      this.WindowsInfo[regVersionInfo.regKeyTbl[i]] = this.Shell.RegRead(regKey);
+    for (var i = 0; i < regVersionInfo.regKeyRoot.length; i++) {
+      for (var j = 0; j < regVersionInfo.regKeyTbl[i].length; j++) {
+        regKey = regVersionInfo.regKeyRoot[i] + regVersionInfo.regKeyTbl[i][j];
+        this.WindowsInfo[regVersionInfo.regKeyTbl[i][j]] = this.Shell.RegRead(regKey);
+      }
     }
     // ProductFullName
     this.WindowsInfo.ProductFullName = this.WindowsInfo.ProductName;
@@ -123,6 +131,11 @@ var ChkLoadAVG = {
       this.WindowsInfo.ProductFullName += " " + this.WindowsInfo.DisplayVersion;
     else
       this.WindowsInfo.ProductFullName += " " + this.WindowsInfo.ReleaseId;
+    // 64 or 32-bit
+    if (this.WindowsInfo.PROCESSOR_ARCHITECTURE == "AMD64")
+      this.WindowsInfo.ProductFullName += " " + "64-bit";
+    else
+      this.WindowsInfo.ProductFullName += " " + "32-bit";
     // FullVersionNumber
     if (this.WindowsInfo.CurrentMajorVersionNumber)
       this.WindowsInfo.FullVersionNumber =
@@ -203,12 +216,12 @@ var ChkLoadAVG = {
       while (this.httpReq.readyState < 4) {}
     }
   },
-  // Check whether the server is 5ch.net or bbspink.com
+  // Check whether the server is 5ch.io or bbspink.com
   chkSeverName: function () {
     if (!this.ServerName)
       return false;
     var urls =
-      this.ServerName.match(/[-0-9A-Za-z]+\.(?:5ch\.net|bbspink\.com)/);
+      this.ServerName.match(/[-0-9A-Za-z]+\.(?:5ch\.io|bbspink\.com)/);
     if (!urls) {
       this.errMsg = "5‚¿‚á‚ñ‚Ë‚é/BBSPINK ‚ÌŒfŽ¦”Â‚Å‚Í‚ ‚è‚Ü‚¹‚ñ";
       this.dispErr();
@@ -356,11 +369,11 @@ graph_load.png:
     this.BbsMenuJson = strm.ReadText();
     strm.Close();
   },
-  // Create a server list of 5ch.net and bbspink.com.
+  // Create a server list of 5ch.io and bbspink.com.
   getServerList: function() {
     // Create an array of domains and servers from the bbsmenu.json.
     var regex5ch =
-      /"url"\s*:\s*"https:\/\/([-A-Za-z0-9]+)\.5ch\.net\/[-A-Za-z0-9]+\/"/g;
+      /"url"\s*:\s*"https:\/\/([-A-Za-z0-9]+)\.5ch\.io\/[-A-Za-z0-9]+\/"/g;
     var excpt5ch = /(headline|info)/;
     var regexPnk =
       /"url"\s*:\s*"https:\/\/([-A-Za-z0-9]+)\.bbspink\.com\/[-A-Za-z0-9]+\/"/g;

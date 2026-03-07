@@ -1,4 +1,4 @@
-//  hissi Checker via hissi.org ver.0.1.7
+//  hissi Checker via hissi.org ver.0.1.8
 //    Usage: hissiChecker.js <bbs name> <local dat path> <res number> <ID or else>
 //
 //  On the JaneXeno
@@ -6,6 +6,7 @@
 //     Command: wscript "$BASEPATHScript/hissiChecker.js" "$URL" "$LOCALDAT" $NUMBER ID/else
 
 //  Version history
+//    0.1.8: Changed 5ch TLD name, '.net' to '.io'.
 //    0.1.7: Added processing for when a string representing a specific date and
 //         : time is appended to the end of an ID.
 //    0.1.6: Corrected regex of 'Trip' check for '</b>[É≥|(|ÅL|ÑD|`|)|É≥] BBxed!!<b> '.
@@ -31,7 +32,7 @@
 */
 
 var hissiChecker = {
-  Version: "0.1.7",
+  Version: "0.1.8",
 
   // hissi checker's site parameters
   hissiUrlBase: "http://hissi.org/",
@@ -188,7 +189,8 @@ var hissiChecker = {
     }
   },
   chkTargetUrl: function () {
-    var urls = this.ThreadUrl.match(/https:\/\/(([-0-9A-Za-z]+)\.(?:5ch\.net|bbspink\.com))\/test\/read\.cgi\/([-0-9A-Za-z]+)/);
+    this.ThreadUrl.replace(/\.5ch\.net/, ".5ch.io");
+    var urls = this.ThreadUrl.match(/https:\/\/(([-0-9A-Za-z]+)\.(?:5ch\.io|bbspink\.com))\/test\/read\.cgi\/([-0-9A-Za-z]+)/);
     if (urls) {
       this.folderName = urls[3];
     } else {
