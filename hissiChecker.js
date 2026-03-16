@@ -1,4 +1,4 @@
-//  hissi Checker via hissi.org ver.0.1.8
+//  hissi Checker via hissi.org ver.0.1.9
 //    Usage: hissiChecker.js <bbs name> <local dat path> <res number> <ID or else>
 //
 //  On the JaneXeno
@@ -6,6 +6,7 @@
 //     Command: wscript "$BASEPATHScript/hissiChecker.js" "$URL" "$LOCALDAT" $NUMBER ID/else
 
 //  Version history
+//    0.1.9: Handling local paths containing whitespace characters for WScript.Shell.Run.
 //    0.1.8: Changed 5ch TLD name, '.net' to '.io'.
 //    0.1.7: Added processing for when a string representing a specific date and
 //         : time is appended to the end of an ID.
@@ -32,7 +33,7 @@
 */
 
 var hissiChecker = {
-  Version: "0.1.8",
+  Version: "0.1.9",
 
   // hissi checker's site parameters
   hissiUrlBase: "http://hissi.org/",
@@ -313,6 +314,7 @@ and the receiving local side processes it as is with UTF-16LE BOM.
     strm.Close();
   },
   sendResult: function(resultHTML) {
+    resultHTML = "\"" + resultHTML + "\""; // Handling local paths containing whitespace characters.
     this.Shell.Run(resultHTML);
   }
 }

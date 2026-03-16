@@ -1,4 +1,4 @@
-//  ChkLoadAVG.js - Check Load average of 5ch server ver.0.2.5
+//  ChkLoadAVG.js - Check Load average of 5ch server ver.0.2.6
 //    Usage: ChkLoadAVG.js <server name>
 //
 //  On the JaneXeno
@@ -9,6 +9,7 @@
 //        Command: wscript "$BASEPATHScript/ChkLoadAVG.js"
 
 //  Version history
+//    0.2.6: Handling local paths containing whitespace characters for WScript.Shell.Run.
 //    0.2.5: Changed 5ch TLD name, '.net' to '.io'.
 //         : Excepted bbspink.com.
 //    0.2.4: Added information on Windows architecture 64/32-bit.
@@ -31,7 +32,7 @@
 //view-source:https://web.archive.org/web/20230713114335/https://stat.5ch.io/graphs.html
 
 var ChkLoadAVG = {
-  Version: "0.2.5",
+  Version: "0.2.6",
 
   // Configuration variables and their values.
   ResultGraphsFile: "suzume\\graphs.html",
@@ -524,7 +525,8 @@ graph_load.png:
     }
     var rsltHtmlStr = hdBlkStr + mainBlkStr + ftBlkStr;
     this.saveFile(this.ResultGraphsFile, "UTF-8", rsltHtmlStr);
-    this.Shell.Run(this.ResultGraphsFile);
+    var rsltGFile = "\"" + this.ResultGraphsFile + "\""; // Handling local paths containing whitespace characters
+    this.Shell.Run(rsltGFile);
   },
   // Text file I/O functions: loadFile(File name, Encoding), saveFile(File name, Encoding, Content)
   loadFile: function(fileName, encoding) {
