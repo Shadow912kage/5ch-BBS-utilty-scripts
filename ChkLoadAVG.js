@@ -1,4 +1,4 @@
-//  ChkLoadAVG.js - Check Load average of 5ch server ver.0.2.6
+//  ChkLoadAVG.js - Check Load average of 5ch server ver.0.2.7
 //    Usage: ChkLoadAVG.js <server name>
 //
 //  On the JaneXeno
@@ -9,6 +9,8 @@
 //        Command: wscript "$BASEPATHScript/ChkLoadAVG.js"
 
 //  Version history
+//    0.2.7: Fixed an issue where the uptime string could not be parsed using regular expressions
+//         : if it had been less than one day since startup.
 //    0.2.6: Handling local paths containing whitespace characters for WScript.Shell.Run.
 //    0.2.5: Changed 5ch TLD name, '.net' to '.io'.
 //         : Excepted bbspink.com.
@@ -32,7 +34,7 @@
 //view-source:https://web.archive.org/web/20230713114335/https://stat.5ch.io/graphs.html
 
 var ChkLoadAVG = {
-  Version: "0.2.6",
+  Version: "0.2.7",
 
   // Configuration variables and their values.
   ResultGraphsFile: "suzume\\graphs.html",
@@ -246,7 +248,7 @@ var ChkLoadAVG = {
     var laLatest = this.httpReq.responseText.match(/^(.+)\r?\n/);
     if (laLatest[0]) {
       this.laText = laLatest[1].replace(/\s+/g, " ");
-      var lamatch = this.laText.match(/^(\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}:\d{2})\s+(\d{10})\s+(\d{1,2}:\d{2}(?:AM|PM))\s+(up\s+\d+\s+days?,\s+\d+(?::\d{2}|\s+(?:hrs?|mins?|sec)),\s+\d+\s+users?,)\s+(load averages:\s+(\d+\.\d{2}),\s+\d+\.\d{2},\s+\d+\.\d{2})\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+)\s+(\d+)\s+(\d+)/);
+      var lamatch = this.laText.match(/^(\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}:\d{2})\s+(\d{10})\s+(\d{1,2}:\d{2}(?:AM|PM))\s+(up(?:\s+\d+\s+days?,)?\s+\d+(?::\d{2}|\s+(?:hrs?|mins?|sec)),\s+\d+\s+users?,)\s+(load averages:\s+(\d+\.\d{2}),\s+\d+\.\d{2},\s+\d+\.\d{2})\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+)\s+(\d+)\s+(\d+)/);
       if (lamatch) {
         this.latestLaTxt = lamatch[0];
         this.graphLaTxt = lamatch[1] + " " + lamatch[3] + " " + lamatch[4] +
