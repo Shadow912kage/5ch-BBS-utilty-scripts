@@ -1,4 +1,4 @@
-//  ChkLoadAVG.js - Check Load average of 5ch server ver.0.2.7
+//  ChkLoadAVG.js - Check Load average of 5ch server ver.0.2.8
 //    Usage: ChkLoadAVG.js <server name>
 //
 //  On the JaneXeno
@@ -9,6 +9,7 @@
 //        Command: wscript "$BASEPATHScript/ChkLoadAVG.js"
 
 //  Version history
+//    0.2.8: Added 'bbspink.com'.
 //    0.2.7: Fixed an issue where the uptime string could not be parsed using regular expressions
 //         : if it had been less than one day since startup.
 //    0.2.6: Handling local paths containing whitespace characters for WScript.Shell.Run.
@@ -34,7 +35,7 @@
 //view-source:https://web.archive.org/web/20230713114335/https://stat.5ch.io/graphs.html
 
 var ChkLoadAVG = {
-  Version: "0.2.7",
+  Version: "0.2.8",
 
   // Configuration variables and their values.
   ResultGraphsFile: "suzume\\graphs.html",
@@ -92,9 +93,9 @@ var ChkLoadAVG = {
 
     this.serverList5ch = [];
     this.serverListPnk = [];
-//    this.graphArray = [{domain: "5ch.io", serverList: this.serverList5ch},
-//                       {domain: "bbspink.com", serverList: this.serverListPnk}];
-    this.graphArray = [{domain: "5ch.io", serverList: this.serverList5ch}];
+    this.graphArray = [{domain: "5ch.io", serverList: this.serverList5ch},
+                       {domain: "bbspink.com", serverList: this.serverListPnk}];
+//    this.graphArray = [{domain: "5ch.io", serverList: this.serverList5ch}];
   },
   //      Solved: Read/write registry values in javascript | Experts Exchange
   //      https://www.experts-exchange.com/questions/22601573/Read-write-registry-values-in-javascript.html
