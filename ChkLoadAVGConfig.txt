@@ -1,0 +1,19 @@
+// ChkLoadAVGConfig.txt - Configuration file for ChkLoadAVG.js
+// This file encoding must be UTF-8.
+
+// Format
+//   Property name: its value
+//   (Lines starting with '//' are comment lines.)
+
+// Domain names
+DomainName5ch: "5ch.io"
+// If the operation of the 'bbspink.com' domain is discontinued,
+// please comment out the 'DomainNamePnk' property.
+DomainNamePnk: "bbspink.com"
+
+// BBS menu JSON file URL
+BbsMenuJsonUrl: "https://menu.5ch.io/bbsmenu.json"
+
+// Other links (URL, description text, <br> flag)
+OtherLink: "https://stat.5ch.io/TAROT", "5ch/bbspink投稿数", true
+OtherLink: "https://www.kyodemo.net/sdemo/k/5_?hs=1", "5chサーバ稼働状況 - ビュアデモ", false

@@ -1,4 +1,4 @@
-//  ChkLoadAVG.js - Check Load average of 5ch server ver.0.2.8
+//  ChkLoadAVG.js - Check Load average of 5ch server ver.0.2.9
 //    Usage: ChkLoadAVG.js <server name>
 //
 //  On the JaneXeno
@@ -9,6 +9,9 @@
 //        Command: wscript "$BASEPATHScript/ChkLoadAVG.js"
 
 //  Version history
+//    0.2.9: Added domain name configrations.
+//         : Removed the domain names and URLs from source code and template HTML files;
+//         : they are now loaded from the configuration file 'ChkLoadAVGConfig.txt'.
 //    0.2.8: Added 'bbspink.com'.
 //    0.2.7: Fixed an issue where the uptime string could not be parsed using regular expressions
 //         : if it had been less than one day since startup.
@@ -35,14 +38,26 @@
 //view-source:https://web.archive.org/web/20230713114335/https://stat.5ch.io/graphs.html
 
 var ChkLoadAVG = {
-  Version: "0.2.8",
+  Version: "0.2.9",
 
-  // Configuration variables and their values.
+  // Template and its result graphics html files
   ResultGraphsFile: "suzume\\graphs.html",
   TemplateGraphsFile: "suzume\\graphsTemplate.html",
 
+  // Configuration file; property variables and their values.
+  ConfigurationFile: "ChkLoadAVGConfig.txt",
+  configProp: ["DomainName5ch", "DomainNamePnk", "BbsMenuJsonUrl", "OtherLink"],
+/*
+  DomainName5ch: "5ch.io",
+  // If the operation of the 'bbspink.com' domain is discontinued,
+  // please comment out the 'DomainNamePnk' property.
+  DomainNamePnk: "bbspink.com",
   BbsMenuJsonUrl: "https://menu.5ch.io/bbsmenu.json",
 
+  // graphsTemplate.html
+  OtherLinks: [{href: "https://stat.5ch.io/TAROT", desc: "5ch/bbspink投稿数", br: true},
+               {href: "https://www.kyodemo.net/sdemo/k/5_?hs=1", desc: "5chサーバ稼働状況 - ビュアデモ", br: false}],
+*/
   sizeLATxt: "bytes=0-191", // 128 + 64 = 192 bytes, HTTP request header 'Range:' value.
   thrshldLA: 5, // Load Average threshold value.
   cH3ClssTbl: ["H3_OK", "H3_NG"], // Host status's CSS class strings table.
@@ -55,7 +70,7 @@ var ChkLoadAVG = {
   postMarker: " -->\r?\n",
   blockStr: "((?:.+\r?\n)+?)",
   endOfFile: "(.+)?$",
-  gVarStrTbl: ["%SCRNAME%", "%VERSION%", "%DATETIME%", "%LDATETIME%"],
+  gVarStrTbl: ["%SCRNAME%", "%VERSION%", "%DATETIME%", "%LDATETIME%", "%OTHERLINKS%"],
   sVarStrTbl: ["%HOST%"],
   dVarStrTbl: ["%DOMAIN%"],
   cVarStrTbl: ["%HOST%", "%FQDN%", "%LATEXT%", "%H3STAT%", "%LASTAT%", "%HOSTSTAT%"],
@@ -87,15 +102,20 @@ var ChkLoadAVG = {
       WScript.ScriptFullName.lastIndexOf("\\") + 1);
     this.ResultGraphsFile = this.scrFolder + this.ResultGraphsFile;
     this.TemplateGraphsFile = this.scrFolder + this.TemplateGraphsFile;
+    this.ConfigurationFile = this.scrFolder + this.ConfigurationFile;
     this.ErrReportFile = this.scrFolder + WScript.ScriptName + ".Err.txt";
     this.errMsg = "";
     this.setupHttpReq();
+    this.setupConfig();
 
     this.serverList5ch = [];
     this.serverListPnk = [];
-    this.graphArray = [{domain: "5ch.io", serverList: this.serverList5ch},
-                       {domain: "bbspink.com", serverList: this.serverListPnk}];
-//    this.graphArray = [{domain: "5ch.io", serverList: this.serverList5ch}];
+    if (this.DomainNamePnk) {
+      this.graphArray = [{domain: this.DomainName5ch, serverList: this.serverList5ch},
+                        {domain: this.DomainNamePnk, serverList: this.serverListPnk}];
+    } else {
+      this.graphArray = [{domain: this.DomainName5ch, serverList: this.serverList5ch}];
+    }
   },
   //      Solved: Read/write registry values in javascript | Experts Exchange
   //      https://www.experts-exchange.com/questions/22601573/Read-write-registry-values-in-javascript.html
@@ -218,6 +238,65 @@ var ChkLoadAVG = {
       }
     } else {
       while (this.httpReq.readyState < 4) {}
+    }
+  },
+  // Setup configurations
+  configErr: function(phase) {
+    this.errMsg = "設定ファイルが読み取れませんでした (" + phase +")";
+    this.dispErr();
+  },
+  setupConfig: function() {
+    var configBuf = this.loadFile(this.ConfigurationFile, "UTF-8");
+    var configArray = configBuf.match(/^(?!\/\/).*$/gm); // remove comment lines.
+    if (!configArray)
+      this.configErr("コメント行削除");
+    // remove empty and only of white spaces lines.
+    /*
+    // use filter()... Nooooo, Array.filter is NOT implemented on the JScript!
+    function nonEmptySpc(lineBuf) {
+      if (lineBuf.match(/^\s*$/))
+        return false;
+      return true;
+    }
+    configArray = configArray.filter(nonEmptySpc);
+    */
+    // ad hoc filter function... orz
+    var tmp = [];
+    for (var i = 1, j = 0; i < configArray.length; i++) {
+      if (configArray[i].match(/^\s*$/))
+        continue;
+      tmp[j++] = configArray[i];
+    }
+    configArray = tmp;
+    // analyze properties and its values.
+    this.OtherLinks = [];
+    for (i = 0, j = 0; i < configArray.length; i++) {
+      var propArray = configArray[i].match(/^\s*([^:]+)\s*:\s*(.+)$/);
+      if (!propArray)
+        this.configErr("プロパティ抽出");
+      // Array.includes() and indexOf() are NOT implemented on the JScript...
+      for (var k = 0, hitProp = false; k < this.configProp.length; k++) {
+        if (this.configProp[k] == propArray[1])
+          hitProp = true;
+      }
+      if (!hitProp)
+        this.configErr("不正なプロパティ名");
+
+      if (propArray[1] == "OtherLink") {
+        this.OtherLinks[j] = {};
+        var linkArray = propArray[2].match(/^\s*("[^"]+")\s*,\s*("[^"]+")\s*,\s*(.+)$/);
+        if (!linkArray)
+          this.configErr("プロパティ解析");
+        this.OtherLinks[j].href = linkArray[1];
+        this.OtherLinks[j].desc = linkArray[2];
+        this.OtherLinks[j].br = linkArray[3];
+        j++;
+      } else {
+        var value = propArray[2].match(/"([^"]+)"/);
+        if (!value)
+          this.configErr("不正なプロパティ値");
+        this[propArray[1]] = value[1];
+      }
     }
   },
   // Check whether the server is 5ch.io or bbspink.com
@@ -404,7 +483,7 @@ graph_load.png:
   // Create ’graphs.html' and show it in the default web browser.
   showGraphsHtml: function() {
     // Replace global variables in template blocks, '%SCRNAME%', '%VERSION%',
-    // '%DATETIME%', and '%LDATETIME%'.
+    // '%DATETIME%','%LDATETIME%', and %OTHERLINKS%.
     var rplcStr = [];
     var gVarRegex = [];
     var date = new Date();
@@ -421,6 +500,19 @@ graph_load.png:
           break;
         case "%LDATETIME%":
           rplcStr[i] = date.toLocaleString();
+          break;
+        case "%OTHERLINKS%":
+          if (!this.OtherLinks)
+            break;
+          rplcStr[i] = "<p>\n";
+          for (var j = 0; j < this.OtherLinks.length; j++) {
+            rplcStr[i] += "<a target=\"_blank\" href=\"" +
+              this.OtherLinks[j].href + "\">" + this.OtherLinks[j].desc + "</a>";
+              if (this.OtherLinks[j].br)
+                rplcStr[i] += "<br>";
+              rplcStr[i] += "\n";
+          }
+          rplcStr[i] += "</p>\n";
           break;
         default:
           rplcStr[i] = "**** REPLACE ERROR *****"
