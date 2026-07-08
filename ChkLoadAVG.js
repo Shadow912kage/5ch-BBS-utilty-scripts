@@ -9,7 +9,7 @@
 //        Command: wscript "$BASEPATHScript/ChkLoadAVG.js"
 
 //  Version history
-//    0.2.9: Added domain name configrations.
+//    0.2.9: Added domain name configurations.
 //         : Removed the domain names and URLs from source code and template HTML files;
 //         : they are now loaded from the configuration file 'ChkLoadAVGConfig.txt'.
 //    0.2.8: Added 'bbspink.com'.
