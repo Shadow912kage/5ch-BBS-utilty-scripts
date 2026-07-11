@@ -1,4 +1,4 @@
-//  ChkLoadAVG.js - Check Load average of 5ch server ver.0.2.9
+//  ChkLoadAVG.js - Check Load average of 5ch server ver.0.2.10
 //    Usage: ChkLoadAVG.js <server name>
 //
 //  On the JaneXeno
@@ -9,6 +9,7 @@
 //        Command: wscript "$BASEPATHScript/ChkLoadAVG.js"
 
 //  Version history
+//    0.2.10: Fixed the replacement logic for the `OtherLinks[].href` string within `%OTHERLINKS%`.
 //    0.2.9: Added domain name configurations.
 //         : Removed the domain names and URLs from source code and template HTML files;
 //         : they are now loaded from the configuration file 'ChkLoadAVGConfig.txt'.
@@ -38,7 +39,7 @@
 //view-source:https://web.archive.org/web/20230713114335/https://stat.5ch.io/graphs.html
 
 var ChkLoadAVG = {
-  Version: "0.2.9",
+  Version: "0.2.10",
 
   // Template and its result graphics html files
   ResultGraphsFile: "suzume\\graphs.html",
@@ -506,8 +507,8 @@ graph_load.png:
             break;
           rplcStr[i] = "<p>\n";
           for (var j = 0; j < this.OtherLinks.length; j++) {
-            rplcStr[i] += "<a target=\"_blank\" href=\"" +
-              this.OtherLinks[j].href + "\">" + this.OtherLinks[j].desc + "</a>";
+            rplcStr[i] += "<a target=\"_blank\" href=" +
+              this.OtherLinks[j].href + ">" + this.OtherLinks[j].desc + "</a>";
               if (this.OtherLinks[j].br)
                 rplcStr[i] += "<br>";
               rplcStr[i] += "\n";
