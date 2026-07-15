@@ -30,6 +30,9 @@ JaneXeno の ツール(O) > 設定(O)... > 機能 > コマンド で以下のよ
 　コマンド名： 雀のお宿(graphs.html)
 　実行するコマンド： wscript "$BASEPATHScript/ChkLoadAVG.js"
 ```
+## 二文字国コード国旗絵文字変換 ReplaceStrCountryFlags.txt
+ReplaceStr.txt に追加することで二文字の国コードを国旗の絵文字に置き換えます (※現状では JP, US, FR, DE, IT, GB, ES, RU, CU, and KR の10カ国のみ)。<br>
+Noto Color Emojiにはすべての国旗絵文字があるはずなのですが、JP以下10カ国 (1041637 ～ 1041646) 以外のものがどこに割り当てられているかが不明です。
 
 ## その他
 「JaneXeno 用の」と銘打っていますが、Jane系の専用ブラウザなら一応使えるようです。ただし当方では JaneXeno 以外での動作確認はいたしませんし、今後する予定もありませんのであしからず。「こう変更すれば～でも動作します」といったパッチは大歓迎です。
